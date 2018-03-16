@@ -16,12 +16,10 @@ export default class request {
       })
       body.append(this.file.name, this.file.file)
 
-
       this.xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
           let percentComplete = Math.round(event.loaded * 100 / event.total)
           this.file.uploadPercent = percentComplete
-          console.log(percentComplete)
         } else {
           this.file.uploadPercent = 0
         }
@@ -29,14 +27,22 @@ export default class request {
 
       this.xhr.addEventListener("load", () => {
         if (this.xhr.status >= 200 && this.xhr.status < 300) {
-          resolve(this.xhr.response)
+          this.file.uploading = 2
+          this.file.response = this.xhr.response
+          resolve(this.file)
         } else {
-          reject(this.xhr.response)
+          reject(this.file)
         }
       }, false)
 
-      this.xhr.addEventListener("error", () => reject(this.xhr.response), false)
-      this.xhr.addEventListener("abort", () => reject(this.xhr.response), false)
+      this.xhr.addEventListener("error", () => {
+        this.file.response = this.xhr.response
+        reject(this.file)
+      }, false)
+      this.xhr.addEventListener("abort", () => {
+        this.file.response = this.xhr.response
+        reject(this.file)
+      }, false)
 
       this.xhr.open(this.method, this.action, true)
       this.xhr.send(body)

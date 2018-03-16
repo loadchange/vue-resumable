@@ -91,12 +91,7 @@
         if (!this.promptly) {
           return
         }
-        let newFileList = []
-        this.files.forEach(file => {
-          if (file.uploadPercent < 100) {
-            newFileList.push(file)
-          }
-        })
+        let newFileList = this.newFileList()
         if (newFileList.length) {
           this.upload()
         }
@@ -119,16 +114,45 @@
       clear: function () {
         this.files = []
       },
-      upload: function () {
-        let _self = this
+      newFileList: function () {
+        let newFileList = []
         this.files.forEach(file => {
-          if (file.uploadPercent < 100) {
-            let request = new Request(this.postAction, this.data, file)
-            request.send().then(() => {
-              console.log(request.file)
-            })
+          if (!file.uploading) {
+            newFileList.push(file)
           }
         })
+        return newFileList
+      },
+      _sendRequest: function (file) {
+        file.uploading = 1
+        let request = new Request(this.postAction, this.data, file)
+        return request.send()
+      },
+      upload: function (force = false) {
+        if (this.uploading && !force) {
+          return
+        }
+        let newFileList = this.newFileList()
+        let total = newFileList.length
+        if (!total) {
+          return
+        }
+        let _self = this
+        if (this.thread >= total) {
+          newFileList.forEach(file => {
+            _self._sendRequest(file)
+          })
+          return
+        }
+        for (let i = 0; i < this.thread; i++) {
+          let file = newFileList[i]
+          if (file.uploading) {
+            continue
+          }
+          _self._sendRequest(file).then(() => {
+            _self.upload(true)
+          })
+        }
       }
     }
   }

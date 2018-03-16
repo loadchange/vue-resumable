@@ -8,6 +8,7 @@ export default class File {
     this.lastModified = file.lastModified
     this.lastModifiedDate = file.lastModifiedDate
     this.uploadPercent = 0
+    this.uploading = 0
 
     if (/^image\/*/.test(file.type)) {
       this.url = this.getObjectURL(file)
