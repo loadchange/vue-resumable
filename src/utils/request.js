@@ -51,8 +51,7 @@ export default class request {
 
       this.xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
-          let percentComplete = Math.round(event.loaded * 100 / event.total)
-          this.file.uploadPercent = percentComplete
+          this.file.uploadPercent = Math.round(event.loaded * 100 / event.total)
         } else {
           this.file.uploadPercent = 0
         }
@@ -140,6 +139,16 @@ export default class request {
     })
   }
 
+  _getCompleteChunkList() {
+    let completeChunkList = []
+    this.chunks.forEach(chunk => {
+      if (chunk.uploading === 2) {
+        completeChunkList.push(chunk)
+      }
+    })
+    return completeChunkList
+  }
+
   _getNewChunkList() {
     let newChunkList = []
     this.chunks.forEach(chunk => {
@@ -156,12 +165,16 @@ export default class request {
     let threadCount = newChunkList.length > this.thread ? this.thread : newChunkList.length
     for (let i = 0; i < threadCount; i++) {
       this._sendChunk(newChunkList[i]).then(() => {
+        _self.file.uploadPercent = Math.round(_self._getCompleteChunkList().length * 100 / _self.chunks.length)
         _self._sendChunkQueue()
       }).catch(chunk => {
         if (chunk.retries) {
           --chunk.retries
           chunk.uploading = 0
           _self._sendChunkQueue()
+        } else {
+          _self.file.uploadPercent = 0
+          _self.file.uploading = -1
         }
       })
     }

@@ -8,6 +8,7 @@
       post-action=""
       :promptly="false"
       :thread="3"
+      :chunkSize="1024"
       @change="change"
       :data="uploadData"
       ref="resumable"

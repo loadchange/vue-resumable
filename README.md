@@ -1,18 +1,103 @@
 # vue-resumable
 
-> A Vue.js project
+> 这是一个vue上传组件，它支持多线程、分块上传及异常重试
 
-## Build Setup
+## 使用方法
 
-``` bash
-# install dependencies
-npm install
+与其他Vue插件一样，在项目目录安装插件
 
-# serve with hot reload at localhost:8080
-npm run dev
+```
+  npm install vue-resumable
 
-# build for production with minification
-npm run build
 ```
 
-For detailed explanation on how things work, consult the [docs for vue-loader](http://vuejs.github.io/vue-loader).
+并在Vue入口文件 对插件进行注册 
+
+
+```
+  Vue.use(VueResumable)
+```
+
+之后可以在组件中使用该插件
+
+###### 参数
+
+- inputId: 注册input file的id
+- name: 注册input file的name
+- multiple: 是否可以多选
+- directory: 是否上传目录
+- post-action: 上传文件接收请求地址
+- thread: 上传线程数，不开启分块上传时指同时上传的文件数，开启分块上传时之同时上传的块数
+- chunkSize: 分块大小，单位KB，默认为0，0为不开启分块上传
+- maxRetries: 最大重试次数，开启分块时，为单个分块尝试次数，不开启分块则为单个文件尝试次数
+- promptly: 是否对新增文件立即上传，默认:false
+
+
+###### 事件
+
+- change: 当用户选择文件后触发的事件
+
+###### 属性
+
+- files: 组件接收的文件，包括上传完成的与上传中、未上传的全部文件
+  - file: 文件对象
+  - name: 文件名称
+  - size: 文件大小
+  - type: 文件类型
+  - relativePath
+  - lastModified
+  - lastModifiedDate
+  - uploadPercent 文件上传进度
+  - uploading:  文件上传状态 -1:上传失败 0:未上传 1:上传中 2:上传成功
+  - url : 当文件类型为image时有此属性，用于预览
+
+```
+<template>
+  <div id="app">
+    <vue-resumable
+      inputId="up1"
+      name="up1-name"
+      :multiple="true"
+      :directory="false"
+      post-action=""
+      :promptly="false"
+      :thread="3"
+      @change="change"
+      :data="uploadData"
+      ref="resumable"
+    ></vue-resumable>
+    <div>
+      <img v-for="img in imgList" :src="img.url" width="150">
+    </div>
+    <button @click="upload">upload</button>
+  </div>
+</template>
+
+<script>
+  export default {
+    data: function () {
+      return {
+        imgList: [],
+        uploadData: {memberId: 1}
+      }
+    },
+    methods: {
+      change: function () {
+        console.log('change')
+        let _self = this
+        let resumable = this.$refs.resumable
+        resumable.files.forEach(file => {
+          if (file.url) {
+            _self.imgList.push(file)
+          }
+        })
+      },
+      upload: function () {
+        console.log('App upload')
+        this.$refs.resumable.upload()
+      }
+    }
+  }
+</script>
+
+```

@@ -74,19 +74,9 @@
       return {
         files: [],
         features: features,
-        active: false,
-        dropActive: false,
-        uploading: 0,
-        destroy: false,
+        uploading: 0
       }
     },
-    mounted() {
-    },
-    beforeDestroy() {
-      this.destroy = true
-      this.active = false
-    },
-    computed: {},
     watch: {
       files: function () {
         if (!this.promptly) {
