@@ -68,6 +68,27 @@
       maxRetries: {
         type: Number,
         default: 3
+      },
+      // 同步发送给服务端的参数
+      chunkSizeKey: {
+        type: String,
+        default: 'resumableChunkSize'
+      },
+      totalSizeKey: {
+        type: String,
+        default: 'resumableTotalSize'
+      },
+      identifier: {
+        type: String,
+        default: 'resumableIdentifier'
+      },
+      filenameKey: {
+        type: String,
+        default: 'resumableFilename'
+      },
+      relativePathKey: {
+        type: String,
+        default: 'resumableRelativePath'
       }
     },
     data() {
@@ -116,7 +137,15 @@
       },
       _sendRequest: function (file) {
         file.uploading = 1
-        let parameters = [this.postAction, this.data, file, this.headers]
+
+        let data = Object.assign({}, this.data)
+        data[this.chunkSizeKey] = !this.chunkSize || this.chunkSize * 1024 > file.size ? file.size : this.chunkSize
+        data[this.totalSizeKey] = file.size
+        data[this.identifier] = file.identifier
+        data[this.filenameKey] = file.name
+        data[this.relativePathKey] = file.relativePath
+
+        let parameters = [this.postAction, data, file, this.headers]
         if (this.chunkSize) {
           parameters = [...parameters, this.chunkSize, this.thread]
         }

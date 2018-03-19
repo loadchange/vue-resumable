@@ -1,7 +1,7 @@
 {
   "name": "vue-resumable",
   "description": "这是一个vue上传组件，它支持多线程、分块上传及异常重试",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "LoadChange <soocto@gmail.com>",
   "license": "MIT",
   "main": "dist/vue-resumable.js",
