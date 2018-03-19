@@ -6,17 +6,11 @@
 
 与其他Vue插件一样，在项目目录安装插件
 
-```
-  npm install vue-resumable
-
-```
+> npm install vue-resumable
 
 并在Vue入口文件 对插件进行注册 
 
-
-```
-  Vue.use(VueResumable)
-```
+> Vue.use(VueResumable)
 
 之后可以在组件中使用该插件
 
