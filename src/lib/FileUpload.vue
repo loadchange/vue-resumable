@@ -24,10 +24,10 @@
         type: String,
         default: 'file',
       },
-      accept: {
+      model: {
         type: String,
+        default: 'octet',
       },
-      capture: {},
       multiple: {
         type: Boolean,
       },
@@ -70,13 +70,9 @@
         default: 3
       },
       // 同步发送给服务端的参数
-      chunkSizeKey: {
+      typeKey: {
         type: String,
-        default: 'resumableChunkSize'
-      },
-      totalSizeKey: {
-        type: String,
-        default: 'resumableTotalSize'
+        default: 'resumableType'
       },
       identifierKey: {
         type: String,
@@ -89,6 +85,27 @@
       relativePathKey: {
         type: String,
         default: 'resumableRelativePath'
+      },
+      chunkSizeKey: {
+        type: String,
+        default: 'resumableChunkSize'
+      },
+      chunkIndexKey: {
+        type: String,
+        default: 'resumableChunkNumber'
+      },
+      currentChunkSizeKey: {
+        type: String,
+        default: 'resumableCurrentChunkSize'
+      },
+      totalChunksKey: {
+        type: String,
+        default: 'resumableTotalChunks'
+      },
+
+      totalSizeKey: {
+        type: String,
+        default: 'resumableTotalSize'
       }
     },
     data() {
@@ -139,15 +156,24 @@
         file.uploading = 1
 
         let data = Object.assign({}, this.data)
-        data[this.chunkSizeKey] = !this.chunkSize || this.chunkSize * 1024 > file.size ? file.size : this.chunkSize
-        data[this.totalSizeKey] = file.size
+        data[this.typeKey] = file.type
         data[this.identifierKey] = file.identifier
+        data[this.totalSizeKey] = file.size
         data[this.filenameKey] = file.name
         data[this.relativePathKey] = file.relativePath
 
-        let parameters = [this.postAction, data, file, this.headers]
+        let parameters = [this.postAction, data, file, this.headers, this.model]
         if (this.chunkSize) {
-          parameters = [...parameters, this.chunkSize, this.thread]
+          parameters.push({
+            thread: this.thread,
+            identifierKey: this.identifierKey,
+            chunkSize: this.chunkSize,
+            chunkIndexKey: this.chunkIndexKey,
+            chunkSizeKey: this.chunkSizeKey,
+            currentChunkSizeKey: this.currentChunkSizeKey,
+            totalSizeKey: this.totalSizeKey,
+            totalChunksKey: this.totalChunksKey
+          })
         }
         let request = new Request(...parameters)
         return request.send()

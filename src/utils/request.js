@@ -1,14 +1,22 @@
 export default class request {
-  constructor(action, data, file, headers, chunkSize, thread = 1, method = 'POST', responseType = 'json') {
-    this.xhr = new XMLHttpRequest()
-    this.xhr.responseType = responseType
+  constructor(action, data, file, headers, model, chunkOptions = {}, method = 'POST', responseType = 'json') {
+    this.responseType = responseType
     this.method = method
     this.action = action
     this.headers = headers
     this.data = data
     this.file = file
-    this.chunkSize = chunkSize * 1024
-    this.thread = thread
+    this.model = model
+
+    this.thread = chunkOptions.thread || 1
+    this.chunkSize = chunkOptions.chunkSize * 1024
+    this.chunkSizeKey = chunkOptions.chunkSizeKey
+    this.currentChunkSizeKey = chunkOptions.currentChunkSizeKey
+    this.totalSizeKey = chunkOptions.totalSizeKey
+    this.chunkIndexKey = chunkOptions.chunkIndexKey
+    this.totalChunksKey = chunkOptions.totalChunksKey
+    this.identifierKey = chunkOptions.identifierKey
+
     this._body = new FormData()
   }
 
@@ -18,7 +26,7 @@ export default class request {
 
   _setRequestHeader() {
     if (this.headers) {
-      Object.keys(this.headers).forEach(name => this.xhr.setRequestHeader(value, this.headers[name]))
+      Object.keys(this.headers).forEach(name => this.xhr.setRequestHeader(name, this.headers[name]))
     }
   }
 
@@ -28,21 +36,14 @@ export default class request {
     }
   }
 
-  _bindErrorEvent() {
-    this.xhr.addEventListener("error", () => {
-      this.file.response = this.xhr.response
-      reject(this.file)
-    }, false)
-    this.xhr.addEventListener("abort", () => {
-      this.file.response = this.xhr.response
-      reject(this.file)
-    }, false)
-  }
-
   send() {
     if (this.chunkSize && this.fileSize > this.chunkSize) {
       return this._chunkUploadSend()
     }
+    console.log('11')
+    this.xhr = new XMLHttpRequest()
+    this.xhr.responseType = this.responseType
+
     this._setRequestHeader()
     this._setCommonBodyFields()
     return new Promise((resolve, reject) => {
@@ -67,7 +68,13 @@ export default class request {
         }
       }, false)
 
-      this._bindErrorEvent()
+      let _bindErrorEvent = () => {
+        this.file.response = this.xhr.response
+        reject(this.file)
+      }
+
+      this.xhr.addEventListener("error", _bindErrorEvent, false)
+      this.xhr.addEventListener("abort", _bindErrorEvent, false)
 
       this.xhr.open(this.method, this.action, true)
       this.xhr.send(this._body)
@@ -80,14 +87,25 @@ export default class request {
   }
 
   _createChunkFormData(blob, index, start, end) {
-    let _body = new FormData()
-    Object.keys(this.data).forEach(key => _body.append(key, this.data[key]))
-    _body.append(this.file.name, blob)
-    _body.append('index', index)
-    _body.append('start', start)
-    _body.append('end', end)
-    console.log(_body)
-    return _body
+    let _body = null
+
+    let data = Object.assign({}, this.data, {start: start, end: end})
+    data[this.totalSizeKey] = this.file.size
+    data[this.chunkIndexKey] = index + 1
+    data[this.chunkSizeKey] = this.chunkSize
+    data[this.currentChunkSizeKey] = blob.size
+    data[this.identifierKey] = this.file.identifier
+
+    if (this.model === 'octet') {
+      let params = []
+      Object.keys(data).forEach(query => params.push([encodeURIComponent(query), encodeURIComponent(data[query])].join('=')))
+      return params
+    } else {
+      _body = new FormData()
+      data[this.file.name] = blob
+      Object.keys(data).forEach(key => _body.append(key, data[key]))
+      return _body
+    }
   }
 
   _createChunks() {
@@ -106,12 +124,25 @@ export default class request {
         uploading: 0,
         retries: this.file.maxRetries
       }
-      chunk.formData = this._createChunkFormData(chunk.blob, index, start, end)
+
+      let data = this._createChunkFormData(chunk.blob, index, start, end)
+      if (this.model === 'octet') {
+        chunk.action = this.action + (this.action.indexOf('?') >= 0 ? '&' : '?') + data.join('&')
+      } else {
+        chunk.formData = data
+      }
+
       this.chunks.push(chunk)
       index++
       start = end
       end = start + this.chunkSize
     }
+    if (this.model === 'octet') {
+      return
+    }
+    this.chunks.forEach(chunk => {
+      chunk.formData.append(this.totalChunksKey, index)
+    })
   }
 
   _sendChunk(chunk) {
@@ -119,6 +150,15 @@ export default class request {
     let _self = this
     return new Promise((resolve, reject) => {
       _self.xhr = new XMLHttpRequest()
+      let action = this.action
+      if (_self.model === 'octet') {
+        action = chunk.action
+        _self.xhr.setRequestHeader('Content-Type', 'application/octet-stream')
+      }
+
+      let headers = Object.assign({}, _self.headers)
+      Object.keys(headers).forEach(name => _self.xhr.setRequestHeader(name, headers[name]))
+
       _self.xhr.addEventListener('load', () => {
         if (_self.xhr.status >= 200 && _self.xhr.status < 300) {
           chunk.uploading = 2
@@ -133,9 +173,9 @@ export default class request {
 
       _self.xhr.addEventListener('error', accident, false)
       _self.xhr.addEventListener('abort', accident, false)
-
-      _self.xhr.open(this.method, this.action, true)
-      _self.xhr.send(chunk.formData)
+      console.log(_self.method, action)
+      _self.xhr.open(_self.method, action)
+      _self.xhr.send(chunk.formData ? chunk.formData : chunk.blob)
     })
   }
 

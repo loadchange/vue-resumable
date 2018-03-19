@@ -5,7 +5,7 @@
       name="up1-name"
       :multiple="true"
       :directory="false"
-      post-action=""
+      post-action="http://test2.artup.com/artup-mobile/material/sliceUploadMerial"
       :promptly="false"
       :thread="3"
       :chunkSize="1024"
