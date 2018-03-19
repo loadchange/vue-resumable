@@ -78,7 +78,7 @@
         type: String,
         default: 'resumableTotalSize'
       },
-      identifier: {
+      identifierKey: {
         type: String,
         default: 'resumableIdentifier'
       },
@@ -141,7 +141,7 @@
         let data = Object.assign({}, this.data)
         data[this.chunkSizeKey] = !this.chunkSize || this.chunkSize * 1024 > file.size ? file.size : this.chunkSize
         data[this.totalSizeKey] = file.size
-        data[this.identifier] = file.identifier
+        data[this.identifierKey] = file.identifier
         data[this.filenameKey] = file.name
         data[this.relativePathKey] = file.relativePath
 

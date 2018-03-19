@@ -86,6 +86,7 @@ export default class request {
     _body.append('index', index)
     _body.append('start', start)
     _body.append('end', end)
+    console.log(_body)
     return _body
   }
 
@@ -111,7 +112,6 @@ export default class request {
       start = end
       end = start + this.chunkSize
     }
-    console.log(this.chunks)
   }
 
   _sendChunk(chunk) {
