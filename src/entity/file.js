@@ -1,5 +1,5 @@
 export default class File {
-  constructor(file) {
+  constructor(file, maxRetries) {
     this.file = file
     this.name = file.name
     this.size = file.size
@@ -8,7 +8,8 @@ export default class File {
     this.lastModified = file.lastModified
     this.lastModifiedDate = file.lastModifiedDate
     this.uploadPercent = 0
-    this.uploading = 0
+    this.uploading = 0 // -1:上传失败 0:未上传 1:上传中 2:上传成功
+    this.maxRetries = maxRetries || 1
 
     if (/^image\/*/.test(file.type)) {
       this.url = this.getObjectURL(file)

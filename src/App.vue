@@ -5,9 +5,9 @@
       name="up1-name"
       :multiple="true"
       :directory="false"
-      post-action="http://www.html7.top/xianyu/comment/getFileLoud"
+      post-action="http://test2.artup.com/artup-mobile/material/sliceUploadMerial"
       :promptly="false"
-      :thread="1"
+      :thread="3"
       @change="change"
       :data="uploadData"
       ref="resumable"
@@ -24,7 +24,7 @@
     data: function () {
       return {
         imgList: [],
-        uploadData: {uploadType: 1, id: 22}
+        uploadData: {memberId: 1}
       }
     },
     methods: {
