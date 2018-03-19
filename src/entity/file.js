@@ -9,6 +9,7 @@ export default class File {
     this.identifier = this.guid()
     this.uploadPercent = 0
     this.uploading = 0 // -1:上传失败 0:未上传 1:上传中 2:上传成功
+    this.retries = maxRetries || 1
     this.maxRetries = maxRetries || 1
 
     if (/^image\/*/.test(file.type)) {

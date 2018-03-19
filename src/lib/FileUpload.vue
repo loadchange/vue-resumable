@@ -8,7 +8,7 @@
   import InputFile from './InputFile.vue'
   import features from '../utils/features'
   import File from '../entity/file'
-  import Request from '../utils/request'
+  import Upload from '../utils/upload'
 
   export default {
     name: 'vue-resumable',
@@ -24,12 +24,16 @@
         type: String,
         default: 'file',
       },
-      model: {
+      requestType: {
         type: String,
         default: 'octet',
       },
+      capture: {},
       multiple: {
         type: Boolean,
+      },
+      accept: {
+        type: String,
       },
       directory: {
         type: Boolean,
@@ -70,43 +74,15 @@
         default: 3
       },
       // 同步发送给服务端的参数
-      typeKey: {
-        type: String,
-        default: 'resumableType'
-      },
-      identifierKey: {
-        type: String,
-        default: 'resumableIdentifier'
-      },
-      filenameKey: {
-        type: String,
-        default: 'resumableFilename'
-      },
-      relativePathKey: {
-        type: String,
-        default: 'resumableRelativePath'
-      },
-      chunkSizeKey: {
-        type: String,
-        default: 'resumableChunkSize'
-      },
-      chunkIndexKey: {
-        type: String,
-        default: 'resumableChunkNumber'
-      },
-      currentChunkSizeKey: {
-        type: String,
-        default: 'resumableCurrentChunkSize'
-      },
-      totalChunksKey: {
-        type: String,
-        default: 'resumableTotalChunks'
-      },
-
-      totalSizeKey: {
-        type: String,
-        default: 'resumableTotalSize'
-      }
+      carryTypeName: {type: String, default: 'resumableType'},
+      carryFileNameName: {type: String, default: 'resumableFilename'},
+      carryRelativePathName: {type: String, default: 'resumableRelativePath'},
+      carryChunkSizeName: {type: String, default: 'resumableChunkSize'},
+      carryCurrentChunkSizeName: {type: String, default: 'resumableCurrentChunkSize'},
+      carryTotalSizeName: {type: String, default: 'resumableTotalSize'},
+      carryChunkIndexName: {type: String, default: 'resumableChunkNumber'},
+      carryTotalChunksName: {type: String, default: 'resumableTotalChunks'},
+      carryIdentifierName: {type: String, default: 'resumableIdentifier'},
     },
     data() {
       return {
@@ -153,30 +129,30 @@
         return newFileList
       },
       _sendRequest: function (file) {
-        file.uploading = 1
-
-        let data = Object.assign({}, this.data)
-        data[this.typeKey] = file.type
-        data[this.identifierKey] = file.identifier
-        data[this.totalSizeKey] = file.size
-        data[this.filenameKey] = file.name
-        data[this.relativePathKey] = file.relativePath
-
-        let parameters = [this.postAction, data, file, this.headers, this.model]
-        if (this.chunkSize) {
-          parameters.push({
+        this.uploading = 1
+        let uploader = new Upload({
+          action: this.postAction,
+          method: 'POST',
+          headers: this.headers,
+          data: this.data,
+          file: file,
+          requestType: this.requestType,
+          chunk: {
             thread: this.thread,
-            identifierKey: this.identifierKey,
             chunkSize: this.chunkSize,
-            chunkIndexKey: this.chunkIndexKey,
-            chunkSizeKey: this.chunkSizeKey,
-            currentChunkSizeKey: this.currentChunkSizeKey,
-            totalSizeKey: this.totalSizeKey,
-            totalChunksKey: this.totalChunksKey
-          })
-        }
-        let request = new Request(...parameters)
-        return request.send()
+            carryChunkSizeName: this.carryChunkSizeName,
+            carryCurrentChunkSizeName: this.carryCurrentChunkSizeName,
+            carryTotalSizeName: this.carryTotalSizeName,
+            carryChunkIndexName: this.carryChunkIndexName,
+            carryTotalChunksName: this.carryTotalChunksName,
+            carryIdentifierName: this.carryIdentifierName
+          },
+          carryTypeName: this.carryTypeName,
+          carryFileNameName: this.carryFileNameName,
+          carryRelativePathName: this.carryRelativePathName
+        })
+
+        return uploader.send()
       },
       upload: function (force = false) {
         if (this.uploading && !force) {
@@ -187,32 +163,7 @@
         if (!total) {
           return
         }
-        let _self = this
-        if (this.thread >= total) {
-          newFileList.forEach(file => {
-            _self._sendRequest(file)
-          })
-          return
-        }
-        let fileThread = !this.chunkSize ? this.thread : 1
-        for (let i = 0; i < fileThread; i++) {
-          let file = newFileList[i]
-          if (file.uploading) {
-            continue
-          }
-          _self._sendRequest(file).then(() => {
-            _self.upload(true)
-          }).catch((file) => {
-            file.uploadPercent = 0
-            if (file.maxRetries) {
-              file.uploading = 0
-              --file.maxRetries
-            } else {
-              file.uploading = -1
-            }
-            _self.upload(true)
-          })
-        }
+        this._sendRequest(newFileList[0])
       }
     }
   }
