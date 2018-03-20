@@ -8,7 +8,8 @@
       post-action="http://test2.artup.com/artup-mobile/material/sliceUploadMerial"
       :promptly="false"
       :thread="3"
-      :chunkSize="1024"
+      :chunkSize="500"
+      :progress="false"
       @change="change"
       :data="uploadData"
       ref="resumable"
@@ -30,7 +31,6 @@
     },
     methods: {
       change: function () {
-        console.log('change')
         let _self = this
         let resumable = this.$refs.resumable
         resumable.files.forEach(file => {

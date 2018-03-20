@@ -7,21 +7,25 @@ export default class Uploader {
     this.headers = options.headers
     this.data = options.data
     this.file = options.file
+    this.progress = options.progress
     this.requestType = options.requestType
 
     this.thread = options.chunk.thread
     this.chunkSize = options.chunk.chunkSize * 1024
 
     // 携带参数KEY
-    this.carryTypeName = options.carryTypeName
-    this.carryFileNameName = options.carryFileNameName
-    this.carryRelativePathName = options.carryRelativePathName
-    this.carryChunkSizeName = options.chunk.carryChunkSizeName
-    this.carryCurrentChunkSizeName = options.chunk.carryCurrentChunkSizeName
-    this.carryTotalSizeName = options.chunk.carryTotalSizeName
-    this.carryChunkIndexName = options.chunk.carryChunkIndexName
-    this.carryTotalChunksName = options.chunk.carryTotalChunksName
-    this.carryIdentifierName = options.chunk.carryIdentifierName
+    this.carryParamName = {
+      typeName: options.carryTypeName,
+      fileNameName: options.carryFileNameName,
+      relativePathName: options.carryRelativePathName,
+      chunkSizeName: options.chunk.carryChunkSizeName,
+      currentChunkSizeName: options.chunk.carryCurrentChunkSizeName,
+      totalSizeName: options.chunk.carryTotalSizeName,
+      chunkIndexName: options.chunk.carryChunkIndexName,
+      totalChunksName: options.chunk.carryTotalChunksName,
+      identifierName: options.chunk.carryIdentifierName
+    }
+
   }
 
   /**
@@ -36,15 +40,15 @@ export default class Uploader {
    */
   _getCommonArguments(options) {
     let data = {}
-    data[this.carryTypeName] = this.file.type
-    data[this.carryFileNameName] = this.file.name
-    data[this.carryRelativePathName] = this.file.relativePath
-    data[this.carryTotalSizeName] = this.file.size
-    data[this.carryChunkSizeName] = options.chunkSize
-    data[this.carryCurrentChunkSizeName] = options.currentChunkSize
-    data[this.carryChunkIndexName] = options.chunkIndex
-    data[this.carryTotalChunksName] = options.totalChunks
-    data[this.carryIdentifierName] = this.file.identifier
+    data[this.carryParamName.typeName] = this.file.type
+    data[this.carryParamName.fileNameName] = this.file.name
+    data[this.carryParamName.relativePathName] = this.file.relativePath
+    data[this.carryParamName.totalSizeName] = this.file.size
+    data[this.carryParamName.chunkSizeName] = options.chunkSize
+    data[this.carryParamName.currentChunkSizeName] = options.currentChunkSize
+    data[this.carryParamName.chunkIndexName] = options.chunkIndex
+    data[this.carryParamName.totalChunksName] = options.totalChunks
+    data[this.carryParamName.identifierName] = this.file.identifier
     return data
   }
 
@@ -79,9 +83,9 @@ export default class Uploader {
    * @private
    */
   _entiretyUpload() {
-    let options = {
-      ...this.requestOptions,
-      progress: (event) => {
+    let options = this.requestOptions
+    if (this.progress) {
+      options.progress = (event) => {
         if (event.lengthComputable) {
           this.file.uploadPercent = Math.round(event.loaded * 100 / event.total)
         } else {
@@ -90,31 +94,51 @@ export default class Uploader {
       }
     }
 
+    let sendUpload = () => {
+      this.file.uploading = 1
+      return request(options).then((xhr, event) => {
+        this.file.uploading = 2
+        this.file.xhr = xhr
+        this.file.event = event
+        return this.file
+      }).catch(event => {
+        if (this.file.retries) {
+          --this.file.retries
+          this.file.uploading = 0
+          this.send()
+        } else {
+          this.file.event = event
+          this.file.uploading = -1
+          return this.file
+        }
+      })
+    }
+
     let params = Object.assign({},
       // 非分块上传时,公共参数 块大小,当前块大小都是文件大小,index:1,总块数:1
-      this._getCommonArguments(this.file.size, this.file.size, 1, 1),
+      this._getCommonArguments({
+        chunkSize: this.file.size,
+        currentChunkSize: this.file.size,
+        chunkIndex: 1,
+        totalChunks: 1
+      }),
       this.data)
+
     if (this.requestType === 'octet') {
       options.query = params
-      options.data = this.file.file
+      return new Promise(resolve => {
+        let fr = new FileReader()
+        fr.onload = () => {
+          options.data = fr.result
+          resolve(sendUpload())
+        }
+        fr.readAsDataURL(this.file.file)
+      })
     } else {
       params[this.file.name] = this.file.file
       options.data = this._setBodyFields(new FormData(), params)
+      return sendUpload()
     }
-    this.file.uploading = 1
-    return request(options).then(() => {
-      this.file.uploading = 2
-      return this.file
-    }).catch(() => {
-      if (this.file.retries) {
-        --this.file.retries
-        this.file.uploading = 0
-        this.send()
-      } else {
-        this.file.uploading = -1
-        return this.file
-      }
-    })
   }
 
   _createChunkOptions(blob, index, start, end) {
@@ -127,7 +151,10 @@ export default class Uploader {
         chunkIndex: index + 1,
         totalChunks: 1
       }),
-      this.data, {start: start, end: end})
+      this.data, {
+        start: start,
+        end: end
+      })
 
     if (this.requestType === 'octet') {
       options.query = params
@@ -165,23 +192,40 @@ export default class Uploader {
     }
     let _self = this
     this.chunks.forEach(chunk => {
+      chunk.total = index
       if (_self.requestType === 'octet') {
-        chunk.options.query[_self.carryTotalChunksName] = index
+        chunk.options.query[_self.carryParamName.totalChunksName] = index
       } else {
-        chunk.options.data.append(_self.carryTotalChunksName, index)
+        chunk.options.data.append(_self.carryParamName.totalChunksName, index)
       }
     })
+  }
+
+  _setFileUploadResult(chunk, event, xhr) {
+    if (!this.file.chunk) {
+      this.file.chunk = {xhr: {}, event: {}}
+    }
+    if (xhr) {
+      this.file.chunk.xhr[chunk.index] = xhr
+    }
+    if (event) {
+      this.file.chunk.event[chunk.index] = event
+    }
+    if (Object.keys(this.file.chunk.xhr).length === chunk.total) {
+      this.file.uploading = 2
+    }
   }
 
   _sendChunk(chunk) {
     if (chunk.uploading) {
       return
     }
-
     chunk.uploading = 1
-    return request(chunk.options).then(() => {
+    return request(chunk.options).then((xhr, event) => {
       chunk.uploading = 2
-    }).catch(() => {
+
+      this._setFileUploadResult(chunk, event, xhr)
+    }).catch(event => {
       if (chunk.retries) {
         --chunk.retries
         chunk.uploading = 0
@@ -190,21 +234,26 @@ export default class Uploader {
         chunk.uploading = -1
         this.file.uploading = -1
         this.file.uploadPercent = 0
+        this._setFileUploadResult(chunk, event)
       }
     })
   }
 
-  _getCompleteChunkList() {
-    let completeChunkList = []
+  _getUploadingChunkList() {
+    let chunkList = []
     this.chunks.forEach(chunk => {
-      if (chunk.uploading === 2) {
-        completeChunkList.push(chunk)
+      if (chunk.uploading === 1) {
+        chunkList.push(chunk)
       }
     })
-    return completeChunkList
+    return chunkList
   }
 
   _getNewChunkList() {
+    // 文件被标记上传失败,有其他块失败次数达到上限
+    if (this.file.uploading < 0) {
+      return []
+    }
     let newChunkList = []
     this.chunks.forEach(chunk => {
       if (!chunk.uploading) {
@@ -215,19 +264,29 @@ export default class Uploader {
   }
 
   _sendChunkQueue() {
-    let newChunkList = this._getNewChunkList()
-    let _self = this
-    let threadCount = newChunkList.length > this.thread ? this.thread : newChunkList.length
-    for (let i = 0; i < threadCount; i++) {
-      this._sendChunk(newChunkList[i]).then(() => {
-        _self.file.uploadPercent = Math.round(_self._getCompleteChunkList().length * 100 / _self.chunks.length)
-        _self._sendChunkQueue()
-      })
-    }
+    return new Promise(resolve => {
+      let recursive = () => {
+        let newChunkList = this._getNewChunkList()
+        if (!newChunkList.length) {
+          resolve(this.file)
+          return
+        }
+        let threadCount = newChunkList.length > this.thread ? this.thread : newChunkList.length
+        threadCount -= this._getUploadingChunkList()
+        if (threadCount <= 0) {
+          return
+        }
+        for (let i = 0; i < threadCount; i++) {
+          this._sendChunk(newChunkList[i]).then(() => recursive()).catch(() => recursive())
+        }
+      }
+      recursive()
+    })
   }
 
   _chunkUploadSend() {
     this._createChunks()
-    this._sendChunkQueue()
+    this.file.uploading = 1
+    return this._sendChunkQueue()
   }
 }

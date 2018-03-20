@@ -1,52 +1,37 @@
-const creatXMLHttpRequest = (action, method, headers, query) => {
-  let xhr = new XMLHttpRequest()
-  Object.keys(headers).forEach(key => xhr.setRequestHeader(key, headers[key]))
-
+const _generateAction = (action, query) => {
   if (query) {
     let queryArray = []
     Object.keys(query).forEach(key => {
       queryArray.push([encodeURIComponent(key), encodeURIComponent(query[key])].join('='))
     })
     if (queryArray.length) {
-      action += action.match('\\?') ? '&' : '?' + query.join('&')
+      action += action.match('\\?') ? '&' : '?' + queryArray.join('&')
     }
   }
-
-  // xhr.open(method, action)
-  return xhr
+  return action
 }
 
 export default function (options) {
   return new Promise((resolve, reject) => {
-    console.log(options)
-    // let xhr = creatXMLHttpRequest(options.action, options.method, options.headers, options.query)
-
     let xhr = new XMLHttpRequest()
-    Object.keys(options.headers).forEach(key => xhr.setRequestHeader(key, options.headers[key]))
-
-    if (options.query) {
-      let queryArray = []
-      Object.keys(options.query).forEach(key => {
-        queryArray.push([encodeURIComponent(key), encodeURIComponent(options.query[key])].join('='))
-      })
-      if (queryArray.length) {
-        options.action += options.action.match('\\?') ? '&' : '?' + queryArray.join('&')
-      }
-    }
+    let action = options.query ? _generateAction(options.action, options.query) : options.action
 
     if (options.progress) {
       xhr.upload.addEventListener('progress', options.progress, false)
     }
 
     let doneHandler = (event) => {
-      xhr.status >= 200 && xhr.status < 300 ? resolve(xhr, event) : reject(xhr, event)
+      xhr.status >= 200 && xhr.status < 300 ? resolve(xhr, event) : reject(event)
     }
 
     xhr.addEventListener('load', doneHandler, false)
     xhr.addEventListener('error', doneHandler, false)
     xhr.addEventListener('abort', doneHandler, false)
+    xhr.addEventListener('timeout', doneHandler, false)
 
-    xhr.open(options.method, options.action)
+    xhr.open(options.method, action)
+
+    Object.keys(options.headers).forEach(key => xhr.setRequestHeader(key, options.headers[key]))
     xhr.send(options.data)
   })
 }

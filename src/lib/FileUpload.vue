@@ -8,6 +8,7 @@
   import InputFile from './InputFile.vue'
   import features from '../utils/features'
   import File from '../entity/file'
+  import Queue from '../utils/queue'
   import Upload from '../utils/upload'
 
   export default {
@@ -52,6 +53,10 @@
       timeout: {
         type: Number,
         default: 0,
+      },
+      progress: {
+        type: Boolean,
+        default: true,
       },
       // 是否对新增队列的文件 立即上传
       promptly: {
@@ -119,23 +124,14 @@
       clear: function () {
         this.files = []
       },
-      newFileList: function () {
-        let newFileList = []
-        this.files.forEach(file => {
-          if (!file.uploading) {
-            newFileList.push(file)
-          }
-        })
-        return newFileList
-      },
-      _sendRequest: function (file) {
-        this.uploading = 1
-        let uploader = new Upload({
+      _generateUploader: function (file) {
+        return new Upload({
           action: this.postAction,
           method: 'POST',
           headers: this.headers,
           data: this.data,
           file: file,
+          progress:this.progress,
           requestType: this.requestType,
           chunk: {
             thread: this.thread,
@@ -151,19 +147,25 @@
           carryFileNameName: this.carryFileNameName,
           carryRelativePathName: this.carryRelativePathName
         })
-
-        return uploader.send()
       },
-      upload: function (force = false) {
-        if (this.uploading && !force) {
-          return
-        }
-        let newFileList = this.newFileList()
-        let total = newFileList.length
-        if (!total) {
-          return
-        }
-        this._sendRequest(newFileList[0])
+      _getUploaderList: function () {
+        let _self = this
+        let uploaderList = []
+        this.files.forEach(file => {
+          if (!file.uploading) {
+            uploaderList.push(_self._generateUploader(file))
+          }
+        })
+        return uploaderList
+      },
+      upload: function () {
+        return new Queue({
+          thread: this.thread,
+          uploaderList: this._getUploaderList(),
+          enableChunk: this.chunkSize
+        }).then(list => {
+          console.log(list)
+        })
       }
     }
   }
