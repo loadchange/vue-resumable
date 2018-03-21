@@ -5,6 +5,7 @@
   </label>
 </template>
 <script>
+  import * as status from '../config/status'
   import InputFile from './InputFile.vue'
   import features from '../utils/features'
   import File from '../entity/file'
@@ -101,10 +102,7 @@
         if (!this.promptly) {
           return
         }
-        let newFileList = this.newFileList()
-        if (newFileList.length) {
-          this.upload()
-        }
+        this.upload()
       }
     },
     methods: {
@@ -131,7 +129,7 @@
           headers: this.headers,
           data: this.data,
           file: file,
-          progress:this.progress,
+          progress: this.progress,
           requestType: this.requestType,
           chunk: {
             thread: this.thread,
@@ -159,10 +157,28 @@
         return uploaderList
       },
       upload: function () {
-        return new Queue({
+        let _self = this
+        let queue = {
           thread: this.thread,
           uploaderList: this._getUploaderList(),
           enableChunk: this.chunkSize
+        }
+        if (this.uploading) {
+          return new Promise(resolve => {
+            _self.__uploadingTime__ = setInterval(() => {
+              if (!_self.uploading) {
+                resolve()
+                window.clearInterval(_self.__uploadingTime__)
+              }
+            }, 333)
+          }).then(() => {
+            return new Queue(queue).then(() => {
+              _self.uploading = status.NOT_START
+            })
+          })
+        }
+        return new Queue(queue).then(() => {
+          _self.uploading = status.NOT_START
         })
       }
     }
