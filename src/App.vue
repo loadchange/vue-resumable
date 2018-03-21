@@ -41,7 +41,9 @@
       },
       upload: function () {
         console.log('App upload')
-        this.$refs.resumable.upload()
+        this.$refs.resumable.upload().then(list => {
+          console.log('队列完成', list)
+        })
       }
     }
   }
