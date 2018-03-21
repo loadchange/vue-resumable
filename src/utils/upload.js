@@ -1,4 +1,5 @@
 import request from './request'
+import * as status from '../config'
 
 export default class Uploader {
   constructor(options) {
@@ -115,7 +116,7 @@ export default class Uploader {
     }
 
     let params = Object.assign({},
-      // 非分块上传时,公共参数 块大小,当前块大小都是文件大小,index:1,总块数:1
+      // 非分块上传时,公共参数 块大小,当前块大小都是文件大小,config:1,总块数:1
       this._getCommonArguments({
         chunkSize: this.file.size,
         currentChunkSize: this.file.size,
@@ -143,6 +144,14 @@ export default class Uploader {
 
   _createChunkOptions(blob, index, start, end) {
     let options = Object.assign({}, this.requestOptions)
+    if (this.progress) {
+      options.progress = (event) => {
+        if (event.lengthComputable) {
+          let num = this._filterChunkList(status.SUCCESS).length
+          this.file.uploadPercent = Math.floor(100 / this.chunks.length * num) + Math.floor(event.loaded * 100 / this.file.size)
+        }
+      }
+    }
 
     let params = Object.assign(
       this._getCommonArguments({
@@ -180,7 +189,7 @@ export default class Uploader {
         index: index,
         blob: _blob,
         startOffset: start,
-        uploading: 0,
+        uploading: status.NOT_START,
         retries: this.file.maxRetries
       }
 
@@ -212,7 +221,7 @@ export default class Uploader {
       this.file.chunk.event[chunk.index] = event
     }
     if (Object.keys(this.file.chunk.xhr).length === chunk.total) {
-      this.file.uploading = 2
+      this.file.uploading = status.SUCCESS
     }
   }
 
@@ -220,64 +229,68 @@ export default class Uploader {
     if (chunk.uploading) {
       return
     }
-    chunk.uploading = 1
+    chunk.uploading = status.UPLOADING
     return request(chunk.options).then((xhr, event) => {
-      chunk.uploading = 2
+      chunk.uploading = status.SUCCESS
 
       this._setFileUploadResult(chunk, event, xhr)
     }).catch(event => {
       if (chunk.retries) {
         --chunk.retries
-        chunk.uploading = 0
+        chunk.uploading = status.NOT_START
         this._sendChunk(chunk)
       } else {
-        chunk.uploading = -1
-        this.file.uploading = -1
+        chunk.uploading = status.ERROR
+        this.file.uploading = status.ERROR
         this.file.uploadPercent = 0
         this._setFileUploadResult(chunk, event)
       }
     })
   }
 
-  _getUploadingChunkList() {
-    let chunkList = []
-    this.chunks.forEach(chunk => {
-      if (chunk.uploading === 1) {
-        chunkList.push(chunk)
-      }
-    })
-    return chunkList
-  }
-
-  _getNewChunkList() {
-    // 文件被标记上传失败,有其他块失败次数达到上限
-    if (this.file.uploading < 0) {
-      return []
+  /**
+   * 过滤chunk返回对应列表
+   * @param state 对应chunk对象的uploading字段
+   * @returns {Array}
+   * @private
+   */
+  _filterChunkList(state) {
+    let list = []
+    // 查询未上传的chunk时检查文件有没有被标记为失败
+    if (state === 0 && this.file.uploading < 0) {
+      return list
     }
-    let newChunkList = []
     this.chunks.forEach(chunk => {
-      if (!chunk.uploading) {
-        newChunkList.push(chunk)
+      if (chunk.uploading === state) {
+        list.push(chunk)
       }
     })
-    return newChunkList
+    return list
   }
 
   _sendChunkQueue() {
     return new Promise(resolve => {
       let recursive = () => {
-        let newChunkList = this._getNewChunkList()
+        let newChunkList = this._filterChunkList(status.NOT_START)
         if (!newChunkList.length) {
           resolve(this.file)
           return
         }
         let threadCount = newChunkList.length > this.thread ? this.thread : newChunkList.length
-        threadCount -= this._getUploadingChunkList()
+        threadCount -= this._filterChunkList(status.UPLOADING)
         if (threadCount <= 0) {
           return
         }
         for (let i = 0; i < threadCount; i++) {
-          this._sendChunk(newChunkList[i]).then(() => recursive()).catch(() => recursive())
+          this._sendChunk(newChunkList[i]).then(() => {
+            let num = this._filterChunkList(status.SUCCESS).length
+            if (num === this.chunks.length) {
+              this.file.uploadPercent = 100
+              return
+            }
+            this.file.uploadPercent = Math.floor(100 / this.chunks.length * num)
+            recursive()
+          }).catch(() => recursive())
         }
       }
       recursive()
@@ -286,7 +299,7 @@ export default class Uploader {
 
   _chunkUploadSend() {
     this._createChunks()
-    this.file.uploading = 1
+    this.file.uploading = status.UPLOADING
     return this._sendChunkQueue()
   }
 }
