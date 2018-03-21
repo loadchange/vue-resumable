@@ -5,7 +5,6 @@
   </label>
 </template>
 <script>
-  import * as status from '../config/status'
   import InputFile from './InputFile.vue'
   import features from '../utils/features'
   import File from '../entity/file'
@@ -15,12 +14,10 @@
   export default {
     name: 'vue-resumable',
 
-    components: {
-      InputFile,
-    },
+    components: {InputFile},
     props: {
       inputId: {
-        type: String,
+        type: String
       },
       name: {
         type: String,
@@ -167,18 +164,18 @@
           return new Promise(resolve => {
             _self.__uploadingTime__ = setInterval(() => {
               if (!_self.uploading) {
-                resolve()
                 window.clearInterval(_self.__uploadingTime__)
+                resolve()
               }
             }, 333)
           }).then(() => {
             return new Queue(queue).then(() => {
-              _self.uploading = status.NOT_START
+              _self.uploading = 0
             })
           })
         }
         return new Queue(queue).then(() => {
-          _self.uploading = status.NOT_START
+          _self.uploading = 0
         })
       }
     }

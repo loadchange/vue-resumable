@@ -1,5 +1,25 @@
 import request from './request'
-import * as status from '../config/status'
+
+/**
+ * 上传出错
+ * @type {number}
+ */
+const ERROR = -1
+/**
+ * 未开始上传
+ * @type {number}
+ */
+const NOT_START = 0
+/**
+ * 上传中
+ * @type {number}
+ */
+const UPLOADING = 1
+/**
+ * 上传成功
+ * @type {number}
+ */
+const SUCCESS = 2
 
 export default class Uploader {
   constructor(options) {
@@ -147,7 +167,7 @@ export default class Uploader {
     if (this.progress) {
       options.progress = (event) => {
         if (event.lengthComputable) {
-          let num = this._filterChunkList(status.SUCCESS).length
+          let num = this._filterChunkList(SUCCESS).length
           this.file.uploadPercent = Math.floor(100 / this.chunks.length * num) + Math.floor(event.loaded * 100 / this.file.size)
         }
       }
@@ -189,7 +209,7 @@ export default class Uploader {
         index: index,
         blob: _blob,
         startOffset: start,
-        uploading: status.NOT_START,
+        uploading: NOT_START,
         retries: this.file.maxRetries
       }
 
@@ -221,7 +241,7 @@ export default class Uploader {
       this.file.chunk.event[chunk.index] = event
     }
     if (Object.keys(this.file.chunk.xhr).length === chunk.total) {
-      this.file.uploading = status.SUCCESS
+      this.file.uploading = SUCCESS
     }
   }
 
@@ -229,19 +249,19 @@ export default class Uploader {
     if (chunk.uploading) {
       return
     }
-    chunk.uploading = status.UPLOADING
+    chunk.uploading = UPLOADING
     return request(chunk.options).then((xhr, event) => {
-      chunk.uploading = status.SUCCESS
+      chunk.uploading = SUCCESS
 
       this._setFileUploadResult(chunk, event, xhr)
     }).catch(event => {
       if (chunk.retries) {
         --chunk.retries
-        chunk.uploading = status.NOT_START
+        chunk.uploading = NOT_START
         this._sendChunk(chunk)
       } else {
-        chunk.uploading = status.ERROR
-        this.file.uploading = status.ERROR
+        chunk.uploading = ERROR
+        this.file.uploading = ERROR
         this.file.uploadPercent = 0
         this._setFileUploadResult(chunk, event)
       }
@@ -271,19 +291,19 @@ export default class Uploader {
   _sendChunkQueue() {
     return new Promise(resolve => {
       let recursive = () => {
-        let newChunkList = this._filterChunkList(status.NOT_START)
+        let newChunkList = this._filterChunkList(NOT_START)
         if (!newChunkList.length) {
           resolve(this.file)
           return
         }
         let threadCount = newChunkList.length > this.thread ? this.thread : newChunkList.length
-        threadCount -= this._filterChunkList(status.UPLOADING)
+        threadCount -= this._filterChunkList(UPLOADING)
         if (threadCount <= 0) {
           return
         }
         for (let i = 0; i < threadCount; i++) {
           this._sendChunk(newChunkList[i]).then(() => {
-            let num = this._filterChunkList(status.SUCCESS).length
+            let num = this._filterChunkList(SUCCESS).length
             if (num === this.chunks.length) {
               this.file.uploadPercent = 100
               return
@@ -299,7 +319,7 @@ export default class Uploader {
 
   _chunkUploadSend() {
     this._createChunks()
-    this.file.uploading = status.UPLOADING
+    this.file.uploading = UPLOADING
     return this._sendChunkQueue()
   }
 }
