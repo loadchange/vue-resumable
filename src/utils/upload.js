@@ -1,5 +1,5 @@
 import request from './request'
-import * as status from '../config'
+import * as status from '../config/status'
 
 export default class Uploader {
   constructor(options) {
