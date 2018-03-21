@@ -20,12 +20,28 @@
 - name: 注册input file的name
 - multiple: 是否可以多选
 - directory: 是否上传目录
+- headers: 自定义header
+- requestType: 上传方式，默认:'octet' 其他可选值:'formdata'
 - post-action: 上传文件接收请求地址
 - thread: 上传线程数，不开启分块上传时指同时上传的文件数，开启分块上传时之同时上传的块数
 - chunkSize: 分块大小，单位KB，默认为0，0为不开启分块上传
 - maxRetries: 最大重试次数，开启分块时，为单个分块尝试次数，不开启分块则为单个文件尝试次数
 - promptly: 是否对新增文件立即上传，默认:false
+- progress: 默认:true，是否对XHR绑定progress监听，如果使用CORS跨域上传，浏览器或启动preflight(预检请求)，预检会在CORS头返回前发起，会导致上传请求提前因同源策略而终止，如果属于这种情况需要关闭
 
+###### 可选参数
+
+> 以下参数用于随上传请求发出 目前不支持关闭
+
+- carryTypeName default: 'resumableType'
+- carryFileNameName default: 'resumableFilename'
+- carryRelativePathName default: 'resumableRelativePath'
+- carryChunkSizeName  'resumableChunkSize'
+- carryCurrentChunkSizeName 'resumableCurrentChunkSize'
+- carryTotalSizeName  default: 'resumableTotalSize'
+- carryChunkIndexName default: 'resumableChunkNumber'
+- carryTotalChunksName  default: 'resumableTotalChunks'
+- carryIdentifierName default: 'resumableIdentifier'
 
 ###### 事件
 
