@@ -163,8 +163,6 @@
           thread: this.thread,
           uploaderList: this._getUploaderList(),
           enableChunk: this.chunkSize
-        }).then(list => {
-          console.log(list)
         })
       }
     }
