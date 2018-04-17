@@ -56,7 +56,7 @@ app.post('/upload-formdata', multer({dest: 'upload/upload-formdata-tmp/'}).any()
       if (err) {
         console.log(err);
       } else {
-        response = {
+        var response = {
           message: 'File uploaded successfully',
           filename: req.files[0].originalname
         };
@@ -67,38 +67,60 @@ app.post('/upload-formdata', multer({dest: 'upload/upload-formdata-tmp/'}).any()
   });
 });
 
-app.post('/upload-formdata-chunks', multer({dest: 'upload/upload-formdata-tmp/'}).array('file'), function (req, res, next) {
-    var responseJson = {
-      first_name: req.body.first_name,
-      last_name: req.body.last_name,
-      origin_file: req.files[0]// 上传的文件信息
-    };
+var fileStaging = {}
+app.post('/upload-formdata-chunks', multer({dest: 'upload/upload-formdata-tmp/'}).any(), function (req, res, next) {
+  let identifier = req.body.resumableIdentifier
+  var chunkInfo = {
+    size: req.body.resumableChunkSize,
+    index: req.body.resumableChunkNumber,
+    chunk: req.files[0]// 上传的文件信息
+  };
+  if (fileStaging[identifier]) {
+    fileStaging[identifier].chunks.push(chunkInfo)
+  } else {
+    fileStaging[identifier] = {
+      totalSize: req.body.resumableTotalSize,
+      totalChunks: +req.body.resumableTotalChunks[1],
+      fileName: req.body.resumableFilename,
+      chunks: [chunkInfo]
+    }
+  }
+  var des_dir = `./upload/upload-formdata-chunks/${identifier}`
+  var des_file = `${des_dir}/${chunkInfo.index}.chunk`;
 
-    var src_path = req.files[0].path;
-    var des_path = req.files[0].destination + req.files[0].originalname;
+  var des_path = `./upload/upload-formdata-chunks/${identifier}-${fileStaging[identifier].fileName}`
 
-    fs.rename(src_path, des_path, function (err) {
+  if (!fs.existsSync(des_dir)) {
+    fs.mkdirSync(des_dir);
+  }
+  fs.readFile(req.files[0].path, function (err, data) {
+    fs.writeFile(des_file, data, function (err) {
       if (err) {
-        throw err;
-      }
-
-      fs.stat(des_path, function (err, stat) {
-        if (err) {
-          throw err;
+        console.log(err);
+      } else {
+        var response = {
+          message: 'File uploaded successfully',
+          identifier: identifier,
+          index: chunkInfo.index
+        };
+        var files = fs.readdirSync(des_dir);
+        if (fileStaging[identifier].totalChunks === files.length) {
+          for (let i = 0; i < files.length; i++) {
+            fs.appendFileSync(des_path, fs.readFileSync(des_dir + '/' + (i + 1) + '.chunk'));
+          }
+          // 删除分片文件夹
+          response.fileName = fileStaging[identifier].fileName
         }
-
-        responseJson['upload_file'] = stat;
-        console.log(responseJson);
-
-        res.json(responseJson);
-      });
+        console.log(response);
+        res.end(JSON.stringify(response));
+      }
     });
-
-    console.log(responseJson);
   });
 
+});
 
-  var uri = 'http://localhost:' + config.dev.port
+
+var uri = 'http://localhost:' + config.dev.port
 
 var _resolve
 var readyPromise = new Promise(resolve => {

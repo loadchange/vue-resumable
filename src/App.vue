@@ -66,6 +66,7 @@
             _self['imgList' + idx].push(file)
           }
         })
+        resumable.files = []
       },
       upload: function () {
         console.log('App upload')
