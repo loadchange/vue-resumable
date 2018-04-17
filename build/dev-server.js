@@ -2,7 +2,7 @@ var opn = require('opn')
 var fs = require('fs');
 var express = require('express')
 var webpack = require('webpack')
-var multer  = require('multer');
+var multer = require('multer');
 var baseConfig = require('./webpack.base.config')
 
 process.env.NODE_ENV = 'development'
@@ -47,30 +47,58 @@ app.use(hotMiddleware)
 
 app.use(express.static('./'));
 
-var upload = multer({dest: 'upload_tmp/'});
+app.post('/upload-formdata', multer({dest: 'upload/upload-formdata-tmp/'}).any(), function (req, res, next) {
+  console.log(req.files[0]);
 
-app.post('/upload-formdata', upload.any(), function(req, res, next) {
-  console.log(req.files[0]);  // 上传的文件信息
-
-  var des_file = "./upload/" + req.files[0].originalname;
-  fs.readFile( req.files[0].path, function (err, data) {
+  var des_file = "./upload/upload-formdata-complete/" + req.files[0].originalname;
+  fs.readFile(req.files[0].path, function (err, data) {
     fs.writeFile(des_file, data, function (err) {
-      if( err ){
-        console.log( err );
-      }else{
+      if (err) {
+        console.log(err);
+      } else {
         response = {
-          message:'File uploaded successfully',
-          filename:req.files[0].originalname
+          message: 'File uploaded successfully',
+          filename: req.files[0].originalname
         };
-        console.log( response );
-        res.end( JSON.stringify( response ) );
+        console.log(response);
+        res.end(JSON.stringify(response));
       }
     });
   });
 });
 
+app.post('/upload-formdata-chunks', multer({dest: 'upload/upload-formdata-tmp/'}).array('file'), function (req, res, next) {
+    var responseJson = {
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      origin_file: req.files[0]// 上传的文件信息
+    };
 
-var uri = 'http://localhost:' + config.dev.port
+    var src_path = req.files[0].path;
+    var des_path = req.files[0].destination + req.files[0].originalname;
+
+    fs.rename(src_path, des_path, function (err) {
+      if (err) {
+        throw err;
+      }
+
+      fs.stat(des_path, function (err, stat) {
+        if (err) {
+          throw err;
+        }
+
+        responseJson['upload_file'] = stat;
+        console.log(responseJson);
+
+        res.json(responseJson);
+      });
+    });
+
+    console.log(responseJson);
+  });
+
+
+  var uri = 'http://localhost:' + config.dev.port
 
 var _resolve
 var readyPromise = new Promise(resolve => {

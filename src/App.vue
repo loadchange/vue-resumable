@@ -13,18 +13,37 @@
         :thread="3"
         :chunkSize="0"
         :progress="true"
-        @change="change"
+        @change="change(1)"
         :data="uploadData"
         requestType="formdata"
-        ref="resumable"
+        ref="resumable1"
       ></vue-resumable>
       <div class="img-list">
-        <img v-for="img in imgList" :src="img.url" width="150">
+        <img v-for="img in imgList1" :src="img.url" width="150">
       </div>
 
       <hr>
 
       <h5 class="type-title">FORMDATA 分段</h5>
+      <vue-resumable
+        inputId="up2"
+        name="up2-name"
+        :multiple="true"
+        :directory="false"
+        post-action="http://127.0.0.1:8888/upload-formdata-chunks"
+        :promptly="true"
+        :thread="3"
+        :chunkSize="500"
+        :progress="true"
+        @change="change(2)"
+        :data="uploadData"
+        requestType="formdata"
+        ref="resumable2"
+      ></vue-resumable>
+      <div class="img-list">
+        <img v-for="img in imgList2" :src="img.url" width="150">
+      </div>
+
     </div>
   </div>
 </template>
@@ -33,17 +52,18 @@
   export default {
     data: function () {
       return {
-        imgList: [],
+        imgList1: [],
+        imgList2: [],
         uploadData: {memberId: 1}
       }
     },
     methods: {
-      change: function () {
+      change: function (idx) {
         let _self = this
-        let resumable = this.$refs.resumable
+        let resumable = this.$refs['resumable' + idx]
         resumable.files.forEach(file => {
           if (file.url) {
-            _self.imgList.push(file)
+            _self['imgList' + idx].push(file)
           }
         })
       },
