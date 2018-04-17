@@ -1,23 +1,31 @@
 <template>
   <div id="app">
-    <vue-resumable
-      inputId="up1"
-      name="up1-name"
-      :multiple="true"
-      :directory="false"
-      post-action="http://127.0.0.1:8888/upload"
-      :promptly="false"
-      :thread="3"
-      :chunkSize="0"
-      :progress="true"
-      @change="change"
-      :data="uploadData"
-      ref="resumable"
-    ></vue-resumable>
-    <div>
-      <img v-for="img in imgList" :src="img.url" width="150">
+    <h2 class="title">DEMO</h2>
+    <div class="container">
+      <h5 class="type-title">FORMDATA 不分段</h5>
+      <vue-resumable
+        inputId="up1"
+        name="up1-name"
+        :multiple="true"
+        :directory="false"
+        post-action="http://127.0.0.1:8888/upload-formdata"
+        :promptly="true"
+        :thread="3"
+        :chunkSize="0"
+        :progress="true"
+        @change="change"
+        :data="uploadData"
+        requestType="formdata"
+        ref="resumable"
+      ></vue-resumable>
+      <div class="img-list">
+        <img v-for="img in imgList" :src="img.url" width="150">
+      </div>
+
+      <hr>
+
+      <h5 class="type-title">FORMDATA 分段</h5>
     </div>
-    <button @click="upload">upload</button>
   </div>
 </template>
 
@@ -48,3 +56,37 @@
     }
   }
 </script>
+<style>
+  #app {
+    padding-top: 30px;
+  }
+
+  hr {
+    height: 3px;
+    margin: 15px 0;
+    background: #555555;
+  }
+
+  .title {
+    color: #ffc66d;
+    font-size: 24px;
+    text-align: center;
+  }
+
+  .container {
+    width: 800px;
+    padding: 30px;
+    margin: 10px auto 0;
+    background: #2b2b2b;
+  }
+
+  .type-title {
+    color: #cc7832;
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .img-list {
+    margin-top: 10px;
+  }
+</style>
