@@ -80,11 +80,6 @@
         uploadData: {memberId: 1}
       }
     },
-    watch: {
-      files(val) {
-        console.log(val)
-      }
-    },
     methods: {
       change(idx) {
         let _self = this
