@@ -44,6 +44,27 @@
         <img v-for="img in imgList2" :src="img.url" width="150">
       </div>
 
+      <h5 class="type-title">OCTET 分段</h5>
+      <vue-resumable
+        inputId="up3"
+        name="up3-name"
+        :multiple="true"
+        :directory="false"
+        post-action="http://test2.artup.com/artup-mobile/material/sliceUploadMerial"
+        :promptly="true"
+        :thread="3"
+        :chunkSize="500"
+        @change="change(3)"
+        :data="uploadData"
+        ref="resumable3"
+      ></vue-resumable>
+      <div class="img-list">
+        <div v-for="img in imgList3" class="item">
+          <img :src="img.url" width="150">
+          <span class="percent">上传进度：{{img.uploadPercent}}</span>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
@@ -52,28 +73,40 @@
   export default {
     data: function () {
       return {
-        imgList1: [],
-        imgList2: [],
+        imgList1: {},
+        imgList2: {},
+        imgList3: {},
+        files: null,
         uploadData: {memberId: 1}
       }
     },
+    watch: {
+      files(val) {
+        console.log(val)
+      }
+    },
     methods: {
-      change: function (idx) {
+      change(idx) {
         let _self = this
         let resumable = this.$refs['resumable' + idx]
         resumable.files.forEach(file => {
           if (file.url) {
-            _self['imgList' + idx].push(file)
+            _self['imgList' + idx][file.identifier] = file
           }
         })
-        resumable.files = []
+        _self['imgList' + idx] = Object.assign({}, _self['imgList' + idx], {})
       },
-      upload: function () {
+      upload() {
         console.log('App upload')
         this.$refs.resumable.upload().then(list => {
           console.log('队列完成', list)
         })
       }
+    },
+    mounted() {
+      this.$nextTick(() => {
+        this.files = this.$refs.resumable3.files
+      })
     }
   }
 </script>
@@ -109,5 +142,29 @@
 
   .img-list {
     margin-top: 10px;
+    overflow: hidden;
+  }
+
+  .img-list .item {
+    position: relative;
+    float: left;
+    height: 122px;
+    width: 150px;
+    border: 1px solid #cc7832;
+  }
+
+  .img-list .item img {
+    max-height: 122px;
+    max-width: 150px;
+  }
+
+  .percent {
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    right: 0;
+    font-size: 16px;
+    color: beige;
+    text-align: center;
   }
 </style>

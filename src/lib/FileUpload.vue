@@ -41,12 +41,10 @@
         type: String,
       },
       headers: {
-        type: Object,
-        default: Object,
+        type: Object
       },
       data: {
-        type: Object,
-        default: Object,
+        type: Object
       },
       timeout: {
         type: Number,
@@ -70,6 +68,11 @@
       chunkSize: {
         type: Number,
         default: 0
+      },
+      // 分块格式，可选 'blob' 'base64'
+      chunkFormat: {
+        type: String,
+        default: 'blob'
       },
       // 上传失败或遇到异常 重试次数
       maxRetries: {
@@ -131,6 +134,7 @@
           chunk: {
             thread: this.thread,
             chunkSize: this.chunkSize,
+            chunkFormat: this.chunkFormat,
             carryChunkSizeName: this.carryChunkSizeName,
             carryCurrentChunkSizeName: this.carryCurrentChunkSizeName,
             carryTotalSizeName: this.carryTotalSizeName,

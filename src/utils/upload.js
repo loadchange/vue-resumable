@@ -33,6 +33,7 @@ export default class Uploader {
 
     this.thread = options.chunk.thread
     this.chunkSize = options.chunk.chunkSize * 1024
+    this.chunkFormat = options.chunk.chunkFormat
 
     // 携带参数KEY
     this.carryParamName = {
@@ -146,15 +147,26 @@ export default class Uploader {
       this.data)
 
     if (this.requestType === 'octet') {
+      let octetHeader = {'Content-Type': 'application/octet-stream'}
+      if (options.headers) {
+        options.headers.push(octetHeader)
+      } else {
+        options.headers = octetHeader
+      }
       options.query = params
-      return new Promise(resolve => {
-        let fr = new FileReader()
-        fr.onload = () => {
-          options.data = fr.result
-          resolve(sendUpload())
-        }
-        fr.readAsDataURL(this.file.file)
-      })
+      if (this.chunkFormat === 'blob') {
+        options.data = this.file.file
+        return sendUpload()
+      } else {
+        return new Promise(resolve => {
+          let fr = new FileReader()
+          fr.onload = () => {
+            options.data = fr.result
+            resolve(sendUpload())
+          }
+          fr.readAsDataURL(this.file.file)
+        })
+      }
     } else {
       params[this.file.name] = this.file.file
       options.data = this._setBodyFields(new FormData(), params)
@@ -186,6 +198,12 @@ export default class Uploader {
       })
 
     if (this.requestType === 'octet') {
+      let octetHeader = {'Content-Type': 'application/octet-stream'}
+      if (options.headers) {
+        options.headers.push(octetHeader)
+      } else {
+        options.headers = octetHeader
+      }
       options.query = params
       options.data = blob
     } else {
