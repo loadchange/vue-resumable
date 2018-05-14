@@ -1,5 +1,5 @@
 <template>
-  <label class="className">
+  <label class="vue-resumable">
     <slot></slot>
     <input-file></input-file>
   </label>
@@ -106,6 +106,9 @@
       }
     },
     methods: {
+      selectFile() {
+        document.getElementById(this.inputId).click()
+      },
       /**
        * file input change event
        * @param file

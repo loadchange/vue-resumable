@@ -21,6 +21,7 @@
       <div class="img-list">
         <img v-for="img in imgList1" :src="img.url" width="150">
       </div>
+      <button class="select-file-btn" @click="selectFile">SELECT-FILE</button>
 
       <hr>
 
@@ -81,6 +82,9 @@
       }
     },
     methods: {
+      selectFile() {
+        this.$refs.resumable1.selectFile()
+      },
       change(idx) {
         let _self = this
         let resumable = this.$refs['resumable' + idx]
@@ -161,5 +165,10 @@
     font-size: 16px;
     color: beige;
     text-align: center;
+  }
+
+  .select-file-btn {
+    padding: 5px;
+    font-size: 20px;
   }
 </style>
