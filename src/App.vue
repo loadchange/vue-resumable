@@ -51,7 +51,7 @@
         name="up3-name"
         :multiple="true"
         :directory="false"
-        post-action="http://test2.artup.com/artup-mobile/material/sliceUploadMerial"
+        post-action="http://test2.artup.com/artup-weixin/material/sliceUploadMerial"
         :promptly="true"
         :thread="3"
         :chunkSize="500"
@@ -150,6 +150,7 @@
     height: 122px;
     width: 150px;
     border: 1px solid #cc7832;
+    overflow: hidden;
   }
 
   .img-list .item img {

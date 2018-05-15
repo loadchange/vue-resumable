@@ -49,6 +49,7 @@
 
 ###### 方法
 
+- clear: 清除组件队列文件
 - selectFile: 通过ref选择组件后调用selectFile方法 选择文件(需要设置组件inputId)
 - upload: 手动调用开始上传
 

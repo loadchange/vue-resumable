@@ -17,7 +17,7 @@
     "vue-component",
     "vue-upload-component"
   ],
-  "version": "1.0.98",
+  "version": "1.0.102",
   "author": "LoadChange <soocto@gmail.com>",
   "license": "Apache-2.0",
   "main": "dist/vue-resumable.js",

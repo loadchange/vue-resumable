@@ -64,7 +64,7 @@ export default class Uploader {
     let data = {}
     data[this.carryParamName.typeName] = this.file.type
     data[this.carryParamName.fileNameName] = this.file.name
-    data[this.carryParamName.relativePathName] = this.file.relativePath
+    data[this.carryParamName.relativePathName] = this.file.relativePath || '/'
     data[this.carryParamName.totalSizeName] = this.file.size
     data[this.carryParamName.chunkSizeName] = options.chunkSize
     data[this.carryParamName.currentChunkSizeName] = options.currentChunkSize
@@ -155,7 +155,7 @@ export default class Uploader {
       }
       options.query = params
       if (this.chunkFormat === 'blob') {
-        options.data = this.file.file
+        options.data = this.file.file.slice(0, this.file.file.size)
         return sendUpload()
       } else {
         return new Promise(resolve => {
@@ -270,7 +270,6 @@ export default class Uploader {
     chunk.uploading = UPLOADING
     return request(chunk.options).then((xhr, event) => {
       chunk.uploading = SUCCESS
-
       this._setFileUploadResult(chunk, event, xhr)
     }).catch(event => {
       if (chunk.retries) {
