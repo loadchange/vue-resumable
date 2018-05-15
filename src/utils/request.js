@@ -32,7 +32,6 @@ export default function (options) {
     xhr.open(options.method, action)
 
     Object.keys(options.headers).forEach(key => xhr.setRequestHeader(key, options.headers[key]))
-    console.log(options.data)
     xhr.send(options.data)
   })
 }

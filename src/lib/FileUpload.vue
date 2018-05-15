@@ -171,6 +171,7 @@
           return new Promise(resolve => {
             _self.__uploadingTime__ = setInterval(() => {
               if (!_self.uploading) {
+                _self.$emit('complete', _self.files)
                 window.clearInterval(_self.__uploadingTime__)
                 resolve()
               }

@@ -56,6 +56,7 @@
         :thread="3"
         :chunkSize="500"
         @change="change(3)"
+        @complete="complete(files)"
         :data="uploadData"
         ref="resumable3"
       ></vue-resumable>
@@ -94,6 +95,9 @@
           }
         })
         _self['imgList' + idx] = Object.assign({}, _self['imgList' + idx], {})
+      },
+      complete(files) {
+        console.log('上传完成', files)
       },
       upload() {
         console.log('App upload')
