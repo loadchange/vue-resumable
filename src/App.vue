@@ -170,6 +170,7 @@
     font-size: 16px;
     color: beige;
     text-align: center;
+    background: #333;
   }
 
   .select-file-btn {

@@ -98,7 +98,7 @@
       }
     },
     watch: {
-      files: function () {
+      files() {
         if (!this.promptly) {
           return
         }
@@ -107,13 +107,15 @@
     },
     methods: {
       selectFile() {
-        document.getElementById(this.inputId).click()
+        if (this.inputId) {
+          document.getElementById(this.inputId).click()
+        }
       },
       /**
        * file input change event
        * @param file
        */
-      addInputFile: function (el) {
+      addInputFile(el) {
         if (el.files && el.files.length) {
           for (let i = 0; i < el.files.length; i++) {
             let file = el.files[i]
@@ -122,10 +124,10 @@
         }
         this.$emit('change', this.files)
       },
-      clear: function () {
+      clear() {
         this.files = []
       },
-      _generateUploader: function (file) {
+      _generateUploader(file) {
         return new Upload({
           action: this.postAction,
           method: 'POST',
@@ -150,7 +152,7 @@
           carryRelativePathName: this.carryRelativePathName
         })
       },
-      _getUploaderList: function () {
+      _getUploaderList() {
         let _self = this
         let uploaderList = []
         this.files.forEach(file => {
@@ -160,29 +162,33 @@
         })
         return uploaderList
       },
-      upload: function () {
+      upload() {
         let _self = this
         let queue = {
           thread: this.thread,
           uploaderList: this._getUploaderList(),
           enableChunk: this.chunkSize
         }
+
+        function complete() {
+          _self.$emit('complete', _self.files)
+        }
+
         if (this.uploading) {
           return new Promise(resolve => {
             _self.__uploadingTime__ = setInterval(() => {
               if (!_self.uploading) {
-                _self.$emit('complete', _self.files)
+                complete()
                 window.clearInterval(_self.__uploadingTime__)
                 resolve()
               }
             }, 333)
           }).then(() => {
-            return new Queue(queue).then(() => {
-              _self.uploading = 0
-            })
+            return new Queue(queue).then(() => _self.uploading = 0)
           })
         }
         return new Queue(queue).then(() => {
+          complete()
           _self.uploading = 0
         })
       }
