@@ -98,6 +98,8 @@
       },
       complete(files) {
         console.log('上传完成', files)
+        console.log('chunk xhr', files[0].chunk)
+        console.log('file xhr', files[0].xhr)
       },
       upload() {
         console.log('App upload')
@@ -109,6 +111,7 @@
     mounted() {
       this.$nextTick(() => {
         this.files = this.$refs.resumable3.files
+        this.$nextTick()
       })
     }
   }
