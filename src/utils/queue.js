@@ -1,28 +1,26 @@
 export default class Queue {
-  constructor(options) {
-    this.thread = options.thread
-    this.uploaderList = options.uploaderList
-    this.enableChunk = options.enableChunk
+  constructor({thread, uploaderList, enableChunk}) {
+    this.thread = thread
+    this.uploaderList = uploaderList
+    this.enableChunk = enableChunk
 
     let recursive = null
-    let list = null
+    let list = this._getNotStartUploader()
     return new Promise(resolve => {
       if (this.enableChunk) {
         recursive = () => {
-          list = this._getNotStartUploader()
           if (list.length) {
-            list[0].send().then(() => recursive()).catch(() => recursive())
+            list[0].send().then(recursive, recursive)
           } else {
             resolve(this.uploaderList)
           }
         }
       } else {
         recursive = () => {
-          list = this._getNotStartUploader()
           if (list.length) {
             let count = this.thread > list.length ? list.length : this.thread
             for (let i = 0; i < count - this._getUploadingList(); i++) {
-              list[i].send().then(() => recursive()).catch(() => recursive())
+              list[i].send().then(recursive, recursive)
             }
           } else {
             resolve(this.uploaderList)

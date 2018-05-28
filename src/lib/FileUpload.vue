@@ -171,26 +171,11 @@
         }
 
         function complete() {
+          _self.uploading = 0
           _self.$emit('complete', _self.files)
         }
 
-        if (this.uploading) {
-          return new Promise(resolve => {
-            _self.__uploadingTime__ = setInterval(() => {
-              if (!_self.uploading) {
-                complete()
-                window.clearInterval(_self.__uploadingTime__)
-                resolve()
-              }
-            }, 333)
-          }).then(() => {
-            return new Queue(queue).then(() => _self.uploading = 0)
-          })
-        }
-        return new Queue(queue).then(() => {
-          complete()
-          _self.uploading = 0
-        })
+        return new Queue(queue).then(complete)
       }
     }
   }

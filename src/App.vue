@@ -51,7 +51,7 @@
         name="up3-name"
         :multiple="true"
         :directory="false"
-        post-action="http://test2.artup.com/artup-weixin/material/sliceUploadMerial"
+        post-action="http://127.0.0.1:8888/upload-octet-chunks"
         :promptly="true"
         :thread="3"
         :chunkSize="500"
