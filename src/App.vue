@@ -97,14 +97,21 @@
         _self['imgList' + idx] = Object.assign({}, _self['imgList' + idx], {})
       },
       complete(files) {
-        console.log('上传完成', files)
-        console.log('chunk xhr', files[0].chunk)
-        console.log('file xhr', files[0].xhr)
+
+        files.forEach(file => {
+          // Extract server response from the `xhr` property of each file object
+          const serverResponse = JSON.parse(file.xhr.responseText);
+          // Implement logic to save data based on the server response
+          // This is a placeholder for actual data saving logic
+          console.log('Server response:', serverResponse);
+          // Assuming serverResponse contains necessary data to be saved to a database
+          // saveDataToDatabase(serverResponse); // Placeholder function for saving data to a database
+        });
       },
       upload() {
         console.log('App upload')
         this.$refs.resumable.upload().then(list => {
-          console.log('队列完成', list)
+          console.log('Queue completed', list)
         })
       }
     },
