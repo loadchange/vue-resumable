@@ -118,3 +118,11 @@
 </script>
 
 ```
+
+## Handling Partial Upload Success
+
+In scenarios where large files are uploaded in parts, there might be cases where not all parts are successfully uploaded. To address this, a new state `PARTIAL_SUCCESS` has been introduced. This state indicates that the file has been partially uploaded, with some chunks failing to upload even after exhausting all retry attempts.
+
+When a file's uploading status is set to `PARTIAL_SUCCESS`, it implies that the file is not fully uploaded, and manual intervention might be required to either retry the failed parts or handle the partially uploaded file according to the application's logic.
+
+This feature ensures that the promise will always trigger resolve() after a large file upload attempt, providing a more reliable and predictable upload process for large files.

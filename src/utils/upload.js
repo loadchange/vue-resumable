@@ -20,6 +20,11 @@ const UPLOADING = 1
  * @type {number}
  */
 const SUCCESS = 2
+/**
+ * 部分上传成功
+ * @type {number}
+ */
+const PARTIAL_SUCCESS = 3
 
 export default class Uploader {
   constructor(options) {
@@ -260,6 +265,8 @@ export default class Uploader {
     }
     if (Object.keys(this.file.chunk.xhr).length === chunk.total) {
       this.file.uploading = SUCCESS
+    } else if (this._filterChunkList(ERROR).length > 0) {
+      this.file.uploading = PARTIAL_SUCCESS
     }
   }
 
@@ -323,11 +330,15 @@ export default class Uploader {
             let num = this._filterChunkList(SUCCESS).length
             if (num === this.chunks.length) {
               this.file.uploadPercent = 100
+              resolve(this.file)
               return
             }
             this.file.uploadPercent = Math.floor(100 / this.chunks.length * num)
             recursive()
-          }).catch(() => recursive())
+          }).catch(() => {
+            resolve(this.file)
+            recursive()
+          })
         }
       }
       recursive()
